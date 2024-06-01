@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Excel File</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Anime.js CSS -->
+    <style>
+        /* Custom CSS for animation */
+        .upload-button {
+            cursor: pointer;
+        }
+        .loader {
+            display: none;
+            border: 4px solid #f3f3f3; /* Light grey */
+            border-top: 4px solid #3498db; /* Blue */
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 2s linear infinite;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            margin-top: -15px; /* Negative half of width */
+            margin-left: -15px; /* Negative half of height */
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="mt-5">Upload Excel File</h1>
+        <div class="custom-file mt-3">
+            <input type="file" class="custom-file-input" id="fileInput" accept=".xls,.xlsx,.csv">
+            <label class="custom-file-label" for="fileInput">Choose file</label>
+        </div>
+        <button class="btn btn-primary mt-3 upload-button" onclick="uploadFile()">Upload</button>
+        <div class="loader" id="loader"></div>
+        <div class="mt-3" id="importMessage" style="display: none;">
+            <div>Data imported successfully!</div>
+            <button class="btn btn-primary mt-3 reload-button" onclick="reloadPage()">Reload</button>
+        </div>
+    </div>
+
+    <!-- Anime.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.0/anime.min.js"></script>
+    <script>
+        // Animation using anime.js
+        anime({
+            targets: 'h1',
+            translateY: [-100, 0],
+            opacity: [0, 1],
+            duration: 1000,
+            easing: 'easeOutExpo'
+        });
+
+        anime({
+            targets: '.custom-file',
+            translateY: [100, 0],
+            opacity: [0, 1],
+            duration: 1000,
+            easing: 'easeOutExpo',
+            delay: 300
+        });
+
+        anime({
+            targets: '.upload-button',
+            translateY: [100, 0],
+            opacity: [0, 1],
+            duration: 1000,
+            easing: 'easeOutExpo',
+            delay: 500
+        });
+
+        // Update label of file input field
+        document.getElementById('fileInput').addEventListener('change', function() {
+            const fileName = this.files[0].name;
+            const label = document.querySelector('.custom-file-label');
+            label.textContent = fileName;
+        });
+
+        // File upload function
+        function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('Please select a file');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            // Hide upload button and file input
+            const uploadButton = document.querySelector('.upload-button');
+            const customFileInput = document.querySelector('.custom-file');
+            uploadButton.style.display = 'none';
+            customFileInput.style.display = 'none';
+
+            // Display loader
+            const loader = document.getElementById('loader');
+            loader.style.display = 'block';
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                // Hide loader
+                loader.style.display = 'none';
+                
+                
+                if (response.ok) {
+    // Show import message with response message
+    response.json().then(data => {
+        const importMessage = document.getElementById('importMessage');
+        importMessage.querySelector('div').textContent = data.message; // Update message
+        importMessage.style.display = 'block'; // Show import message
+        importMessage.querySelector('.reload-button').style.display = 'inline-block'; // Show the reload button
+        console.log('File uploaded successfully');
+         // Automatically download the report
+         // Construct URL to download the report
+        const reportFileName = data.reportFileName;
+        const reportDownloadURL = `${reportFileName}`; // Construct the URL without the /download/ prefix
+
+         window.open(`${reportDownloadURL}`, '_blank');
+    });
+} else {
+    throw new Error('File upload failed');
+}
+
+            })
+            .catch(error => {
+                console.error(error);
+                alert('An error occurred during file upload');
+            });
+        }
+        // Reload page function
+function reloadPage() {
+    location.reload();
+}
+
+    </script>
+</body>
+</html>
